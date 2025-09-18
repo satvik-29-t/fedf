@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <title>Weather App with Dynamic Background</title>
+ <style>
+ body {
+   font-family: Arial, sans-serif;
+   text-align: center;
+   margin: 0;
+   height: 100vh;
+   display: flex;
+   flex-direction: column;
+   justify-content: center;
+   align-items: center;
+   transition: background 1s ease-in-out;
+   background: linear-gradient(to right, #74ebd5, #acb6e5); /* default */
+ }
+ .weather-box {
+   margin-top: 20px;
+   padding: 20px;
+   border-radius: 15px;
+   background: rgba(255, 255, 255, 0.85);
+   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+   min-width: 280px;
+   max-width: 350px;
+ }
+ input, button, select {
+   padding: 10px;
+   margin: 5px;
+   border-radius: 5px;
+   border: 1px solid #ccc;
+ }
+ button {
+   background: #0077cc;
+   color: white;
+   cursor: pointer;
+ }
+ button:hover {
+   background: #005fa3;
+ }
+ </style>
+</head>
+<body>
+ <h1>🌦 Weather App</h1>
+ <input type="text" id="cityInput" placeholder="Enter city name" />
+ <select id="formatSelect">
+   <option value="j1">JSON (detailed)</option>
+   <option value="3">Format 3 (short text)</option>
+   <option value="4">Format 4 (detailed text)</option>
+ </select>
+ <button id="getWeatherBtn">Get Weather</button>
+ <div id="weatherResult" class="weather-box"></div>
+
+ <script>
+ const cityInput = document.getElementById("cityInput");
+ const getWeatherBtn = document.getElementById("getWeatherBtn");
+ const formatSelect = document.getElementById("formatSelect");
+ const weatherResult = document.getElementById("weatherResult");
+
+ async function fetchWeather(city) {
+   try {
+     if (!city) {
+       weatherResult.innerHTML = "<p>Please enter a city name.</p>";
+       return;
+     }
+
+     weatherResult.innerHTML = "<p>Loading...</p>";
+
+     const format = formatSelect.value;
+     const url = `https://wttr.in/${encodeURIComponent(city)}?format=${format}`;
+     const response = await fetch(url);
+     if (!response.ok) throw new Error("City not found or API error.");
+
+     if (format === "j1") {
+       const data = await response.json();
+       const current = data.current_condition[0];
+       weatherResult.innerHTML = `
+         <h2>${city}</h2>
+         <p><strong>Temperature:</strong> ${current.temp_C} °C</p>
+         <p><strong>Condition:</strong> ${current.weatherDesc[0].value}</p>
+         <p><strong>Humidity:</strong> ${current.humidity}%</p>
+       `;
+       applyWeatherBackground(current.weatherDesc[0].value.toLowerCase());
+     } else {
+       const data = await response.text();
+       weatherResult.innerHTML = `<h2>${city}</h2><p>${data}</p>`;
+       document.body.style.background = "linear-gradient(to right, #74ebd5, #acb6e5)"; // default
+     }
+
+     localStorage.setItem("lastCity", city);
+     localStorage.setItem("lastFormat", format);
+
+   } catch (error) {
+     weatherResult.innerHTML = `<p style="color:red;">${error.message}</p>`;
+   }
+ }
+
+ function applyWeatherBackground(condition) {
+   if (condition.includes("sun")) {
+     document.body.style.background = "linear-gradient(to right, #fbc531, #e1b12c)"; // sunny yellow
+   } else if (condition.includes("cloud")) {
+     document.body.style.background = "linear-gradient(to right, #d7d2cc, #304352)"; // cloudy gray
+   } else if (condition.includes("rain")) {
+     document.body.style.background = "linear-gradient(to right, #00c6fb, #005bea)"; // rainy blue
+   } else if (condition.includes("snow")) {
+     document.body.style.background = "linear-gradient(to right, #e6e9f0, #eef1f5)"; // snowy white
+   } else if (condition.includes("storm") || condition.includes("thunder")) {
+     document.body.style.background = "linear-gradient(to right, #232526, #414345)"; // storm dark
+   } else {
+     document.body.style.background = "linear-gradient(to right, #74ebd5, #acb6e5)"; // default
+   }
+ }
+
+ getWeatherBtn.addEventListener("click", () => {
+   const city = cityInput.value.trim();
+   fetchWeather(city);
+ });
+
+ window.onload = () => {
+   const lastCity = localStorage.getItem("lastCity");
+   const lastFormat = localStorage.getItem("lastFormat") || "j1";
+   formatSelect.value = lastFormat;
+   if (lastCity) fetchWeather(lastCity);
+ };
+ </script>
+</body>
+</html>
